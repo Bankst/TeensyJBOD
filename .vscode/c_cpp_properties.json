@@ -1,0 +1,36 @@
+{
+    "configurations": [
+        {
+            "name": "VisualTeensy",
+            "includePath": [
+                "src/**",
+                "C:/Program Files (x86)/Arduino/hardware/teensy/avr/cores/teensy4",
+                "arduino_lib/TeensyID/**",
+                "arduino_lib/SPI/**",
+                "arduino_lib/NativeEthernet/**",
+                "arduino_lib/FNET/**",
+                "arduino_lib/TeensyThreads/**",
+                "arduino_lib/i2c_t3/**",
+                "arduino_lib/Wire/**",
+                "arduino_lib/Bounce2/**",
+                "arduino_lib/SD/**",
+                "lib/**"
+            ],
+            "forcedInclude": [],
+            "defines": [
+                "__IMXRT1062__",
+                "TEENSYDUINO=153",
+                "ARDUINO_TEENSY41",
+                "F_CPU=600000000",
+                "USB_SERIAL",
+                "LAYOUT_US_ENGLISH",
+                "ARDUINO=10813"
+            ],
+            "compilerPath": "C:/PROGRA~2/Arduino/hardware/tools/arm/bin/arm-none-eabi-gcc.exe",
+            "intelliSenseMode": "gcc-arm",
+            "cppStandard": "gnu++11",
+            "cStandard": "c11"
+        }
+    ],
+    "version": 4
+}
