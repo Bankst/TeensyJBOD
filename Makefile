@@ -57,8 +57,7 @@ COL_RESET   := [0m
 # Folders and Files
 #******************************************************************************
 USR_SRC         := src
-LIB_SRC         := $(LIBS_BASE)
-
+LIB_SRC         := lib
 CORE_SRC        := $(CORE_BASE)
 
 BIN             := ./build
@@ -128,7 +127,7 @@ INCLUDE         := -I./$(USR_SRC) -I./$(LIB_SRC) -I$(CORE_SRC)
 INCLUDE         += $(foreach d, $(ARD_LIB_DIRS), -I$d)
 
 # Generate directories --------------------------------------------------------
-DIRECTORIES     :=  $(sort $(dir $(CORE_OBJ) $(USR_OBJ) $(LIB_OBJ)))
+DIRECTORIES     := $(sort $(dir $(CORE_OBJ) $(USR_OBJ) $(LIB_OBJ) $(ARD_LIB_OBJ)))
 generateDirs    := $(foreach d, $(DIRECTORIES), $(shell if not exist "$d" mkdir "$d"))
 
 #$(info dirs: $(DIRECTORIES))
