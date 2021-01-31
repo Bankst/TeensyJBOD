@@ -1,48 +1,75 @@
 #include <Arduino.h>
 #include <NativeEthernet.h>
 #include <TeensyID.h>
-#include <TeensyThreads.h>
-// #include "WebServer.h"
+
+#include "SerialLogger.h"
+#include "NetManager.h"
+#include "WebServer.h"
+#include "SdManager.h"
 
 uint8_t mac[6];
 
-// WebServer webServer(80, "");
+SdManager sdManager;
+WebServer webServer;
 
-void initSerial() {
+void log_debug(std::string str) { cout << F("[main.cpp - DEBUG] ") << str.c_str() << endl; }
+void log_info(std::string str) { cout << F("[main.cpp - INFO] ") << str.c_str() << endl; }
+void log_warn(std::string str) { cout << F("[main.cpp - WARNING] ") << str.c_str() << endl; }
+void log_error(std::string str) { cout << F("[main.cpp - ERROR] ") << str.c_str() << endl; }
+
+void initSerial()
+{
   Serial.begin(115200);
-  Serial.println("Serial INIT - 115200");
+  log_info("Serial init at 115200 baud");
 }
 
-void initEthernet() {
+void initEthernet()
+{
   // get MAC address
   teensyMAC(mac);
-  Serial.printf("MAC Address: %02X:%02X:%02X:%02X:%02X:%02X \n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  Serial.printf("[main.cpp - INFO] MAC Address: %02X:%02X:%02X:%02X:%02X:%02X \n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
   // start the Ethernet connection
   Ethernet.begin(mac);
-  
-  if (Ethernet.linkStatus() == LinkOFF) {
-    Serial.println("Ethernet link DOWN");
-  } else if (Ethernet.linkStatus() == LinkON) {
-    Serial.println("Ethernet link UP");
+
+  if (Ethernet.linkStatus() == LinkOFF)
+  {
+    log_info("Ethernet link DOWN");
+  }
+  else if (Ethernet.linkStatus() == LinkON)
+  {
+    log_info("Ethernet link UP");
   }
 }
 
 void setup()
 {
   initSerial();
-  Serial.println("TeensyJBOD v0.1 starting");
+  log_info("TeensyJBOD v0.1.5 starting");
   initEthernet();
 
-  pinMode(LED_BUILTIN,OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  if (!sdManager.init())
+  {
+    log_warn("No SD card!");
+  }
+  else
+  {
+    sdManager.print_info(false);
+
+    webServer = WebServer(80, sdManager.get_fs());
+  }
 
   // start the server
-  // webServer.init();
-  Serial.print("Server is at ");
+  webServer.init();
+  Serial.print("[main.cpp - INFO] Server is at ");
   Serial.println(Ethernet.localIP());
+
+  // fan control
 }
 
 void loop()
 {
-  // webServer.service();
+  webServer.service();
 }
