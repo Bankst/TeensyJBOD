@@ -11,7 +11,7 @@ USB_MODE			:= SERIAL
 ARD_LIBS_BASE		:= arduino_lib
 LIBS_BASE			:= lib
 
-ARD_LIBS		    := SPI NativeEthernet FNET TeensyThreads Wire TeensyID
+ARD_LIBS		    := SPI NativeEthernet FNET TeensyThreads Wire TeensyID SdFat
 
 CORE_BASE			:= ./teensy4
 GCC_BASE      		:= C:\PROGRA~2\Arduino\hardware\tools\arm\bin
