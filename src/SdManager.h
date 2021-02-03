@@ -21,7 +21,7 @@ private:
 
 public:
     SdManager(){};
-    bool init();
+    bool begin();
     void print_info(bool detail);
 
     SdFs *get_fs();
@@ -39,13 +39,13 @@ private:
 
     void error_print();
 
-    void log_debug(std::string str) { cout << F("[SdManager.h - DEBUG") << str.c_str() << endl; }
-    void log_info(std::string str) { cout << F("[SdManager.h - INFO") << str.c_str() << endl; }
-    void log_warn(std::string str) { cout << F("[SdManager.h - WARNING") << str.c_str() << endl; }
-    void log_error(std::string str) { cout << F("[SdManager.h - ERROR") << str.c_str() << endl; }
+    void log_debug(std::string str) { cout << F("[SdManager.h - DEBUG] ") << str.c_str() << endl; }
+    void log_info(std::string str) { cout << F("[SdManager.h - INFO] ") << str.c_str() << endl; }
+    void log_warn(std::string str) { cout << F("[SdManager.h - WARNING] ") << str.c_str() << endl; }
+    void log_error(std::string str) { cout << F("[SdManager.h - ERROR] ") << str.c_str() << endl; }
 };
 
-bool SdManager::init()
+bool SdManager::begin()
 {
     uint32_t t = millis();
     if (!sd.cardBegin(SD_CONFIG))
@@ -55,7 +55,7 @@ bool SdManager::init()
     }
 
     t = millis() - t;
-    cout << F("[SdManager.h - INFO]: init time: ") << t << " ms" << endl;
+    cout << F("[SdManager.h - INFO] init time: ") << t << " ms" << endl;
 
     if (!sd.card()->readCID(&m_cid) ||
         !sd.card()->readCSD(&m_csd) ||
