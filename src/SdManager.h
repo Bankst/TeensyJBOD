@@ -54,9 +54,6 @@ bool SdManager::begin()
         return false;
     }
 
-    t = millis() - t;
-    cout << F("[SdManager.h - INFO] init time: ") << t << " ms" << endl;
-
     if (!sd.card()->readCID(&m_cid) ||
         !sd.card()->readCSD(&m_csd) ||
         !sd.card()->readOCR(&m_ocr))
@@ -72,14 +69,15 @@ bool SdManager::begin()
         return false;
     }
 
-    log_info("MBR init OK");
-
     if (!sd.volumeBegin())
     {
         cout << F("\n[SdManager.h]: volumeBegin failed. Is the card formatted?\n");
         error_print();
         return false;
     }
+
+    t = millis() - t;
+    cout << F("[SdManager.h - INFO] SD init OK: ") << t << " ms" << endl;
 
     return true;
 }

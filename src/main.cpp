@@ -8,7 +8,11 @@
 #include "SdManager.h"
 
 
-NetManager netManager;
+IPAddress ip(10, 0, 0, 2);
+IPAddress gateway(10, 0, 0, 1);
+IPAddress subnet(255, 255, 255, 0);
+
+NetManager netManager(ip, gateway, subnet);
 SdManager sdManager;
 WebServer webServer;
 
@@ -38,10 +42,8 @@ void setup()
 
   if (netManager.begin())
   {
-    log_info("Net init OK");
     if (sdManager.begin())
     {
-      log_info("SD init OK");
       sdManager.print_info(false);
 
       webServer = WebServer(80, sdManager.get_fs());
@@ -53,8 +55,7 @@ void setup()
 
     // start the server
     webServer.init();
-    Serial.print("[main.cpp - INFO] Server is at ");
-    Serial.println(Ethernet.localIP());
+    
 
   } else {
     log_error("Net init failed!");

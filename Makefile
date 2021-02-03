@@ -21,7 +21,7 @@ UPL_PJRC_B    		:= C:\PROGRA~2\Arduino\hardware\tools
 # Flags and Defines
 #******************************************************************************
 FLAGS_CPU   := -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16
-FLAGS_OPT   := -O2
+FLAGS_OPT   := -O
 FLAGS_COM   := -g -Wall -ffunction-sections -fdata-sections -nostdlib -MMD
 FLAGS_LSP   := 
 

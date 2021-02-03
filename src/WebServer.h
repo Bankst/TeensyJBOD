@@ -6,6 +6,10 @@
 #include <httpparser/httprequestparser.h>
 #include <SdFat.h>
 
+#include <iostream>
+#include <regex>
+#include <iterator>
+
 #include "SerialLogger.h"
 #include "StringUtil.h"
 #include "SensorUtils.h"
@@ -28,7 +32,20 @@ private:
     bool parse_http_request(httpparser::Request &request, std::string request_raw_str);
 
     void service_requests();
+    void format_response_body(std::string body, std::string regex_pattern, std::string content);
     void send_http_response(EthernetClient *client, int statusCode, std::string response);
+
+    std::string default_index_response_body = R"HTML(
+        <!DOCTYPE HTML>
+        <html>
+            <head>
+                <title>TeensyJBOD</title>
+            </head>
+            <body>
+                <h3>Nothing here yet...</h3>
+            </body>
+        </html>
+    )HTML";
 
     std::string not_found_response_body = R"HTML(
         <!DOCTYPE HTML>
@@ -41,6 +58,7 @@ private:
             </body>
         </html>
     )HTML";
+    
 
     std::string server_error_response_body = R"HTML(
         <!DOCTYPE HTML>
@@ -88,8 +106,6 @@ void WebServer::service_requests()
     {
         log_debug("client connected");
 
-        digitalWrite(LED_BUILTIN, HIGH);
-
         if (client.connected())
         {
             bool request_complete = false;
@@ -97,44 +113,35 @@ void WebServer::service_requests()
 
             if (client.available())
             {
-                digitalWrite(LED_BUILTIN, LOW);
-                // bool cur_line_blank = false;
-                // while (!request_complete) {
-                //     char c = client.read();
+                digitalWrite(LED_BUILTIN, HIGH);
+                while (!request_complete) {
+                    char c = client.read();
 
 
-                //     int req_len = request_raw_str.length();
-                //     if (request_raw_str.at(req_len - 3) == '\r' && 
-                //         request_raw_str.at(req_len - 2) == '\n' && 
-                //         request_raw_str.at(req_len - 1) == '\r' && 
-                //         request_raw_str.at(req_len) == '\n'
-                //     ) {
-                //         request_complete = true;
-                //     } else {
-                //         request_raw_str += c;
-                //     }
-
-
-                    
-                //     // if (c == '\n' && cur_line_blank) {
-                //     //     request_complete = true;
-                //     // } else if (c == '\n') {
-                //     //     cur_line_blank = true;
-                //     // } else if (c != '\r') {
-                //     //     cur_line_blank = false;
-                //     // }
-                // }
+                    int req_len = request_raw_str.length();
+                    if (request_raw_str.at(req_len - 3) == '\r' && 
+                        request_raw_str.at(req_len - 2) == '\n' && 
+                        request_raw_str.at(req_len - 1) == '\r' && 
+                        request_raw_str.at(req_len) == '\n'
+                    ) {
+                        request_complete = true;
+                    } else {
+                        request_raw_str += c;
+                    }
+                }
             }
 
             // parse request
             httpparser::Request request;
             if (parse_http_request(request, request_raw_str))
             {
-                // log_debug("HTTP Request:\n" + request.inspect());
+                log_debug("HTTP Request:\n" + request.inspect());
 
-                // TODO: parse URI
+                if (request.uri == "/" || request.uri.find("/index.htm") != std::string::npos) {
 
-                send_http_response(&client, 404, not_found_response_body);
+                } else {
+                    send_http_response(&client, 404, not_found_response_body);    
+                }                
             } else {
                 log_warn("bad HTTP request, sending 500");
                 send_http_response(&client, 500, server_error_response_body);
@@ -170,6 +177,11 @@ bool WebServer::parse_http_request(httpparser::Request &request, std::string req
         log_error("failed to parse HTTP request");
         return false;
     }
+}
+
+void WebServer::format_response_body(std::string body, std::string regex_pattern, std::string content) {
+    // TODO
+    // return std::regex_replace();
 }
 
 void WebServer::send_http_response(EthernetClient *client, int statusCode, std::string response)

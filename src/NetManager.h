@@ -1,26 +1,33 @@
 #pragma once
 
-// #include <Arduino.h>
 #include <NativeEthernet.h>
 #include <TeensyID.h>
 
 #include <sstream>
-#include <iostream>
 
 #include "StringUtil.h"
 #include "SerialLogger.h"
-
-
 
 class NetManager
 {
 private:
     uint8_t mac[6];
+    IPAddress ip;
+    IPAddress gateway;
+    IPAddress subnet;
 
 public:
-    NetManager();
-    // TODO: static IP
-    // NetManager(IPAddress static_ip, IPAddress netmask, IPAddress gateway);
+    NetManager() : ip(IPAddress()), gateway(IPAddress()), subnet(IPAddress())
+    {
+        teensyMAC(mac);
+        Serial.printf("[NetManager.h - INFO] MAC Address: %02X:%02X:%02X:%02X:%02X:%02X \n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    };
+
+    NetManager(IPAddress ip, IPAddress gateway, IPAddress subnet) : ip(ip), gateway(gateway), subnet(subnet)
+    {
+        teensyMAC(mac);
+        Serial.printf("[NetManager.h - INFO] MAC Address: %02X:%02X:%02X:%02X:%02X:%02X \n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    };
 
     bool begin();
 
@@ -31,22 +38,23 @@ private:
     void log_error(std::string str) { cout << F("[NetManager.h - ERROR] ") << str.c_str() << endl; }
 };
 
-NetManager::NetManager()
-{
-    teensyMAC(mac);
-    Serial.printf("[main.cpp - INFO] MAC Address: %02X:%02X:%02X:%02X:%02X:%02X \n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-}
-
 bool NetManager::begin()
 {
-    log_info("Bringing up ethernet...");
+    bool is_static = ip != 0 && gateway != 0 && subnet != 0;
+
+    std::string mode_str = (is_static ? "Static" : "DHCP");
+    log_info("Bringing up ethernet - " + mode_str);
+
 
     uint32_t eth_up_start_millis = millis();
 
-    if (!Ethernet.begin(mac, 25000, 5000)) {
+    if (is_static) {
+        Ethernet.begin(mac, ip, gateway, gateway, subnet);
+    } else if (!Ethernet.begin(mac, 25000, 5000)) {
         return false;
     }
 
+    
     if (Ethernet.linkStatus() == LinkOFF)
     {
         log_info("Ethernet PHY link DOWN");
@@ -57,6 +65,8 @@ bool NetManager::begin()
         uint32_t eth_up_millis = millis() - eth_up_start_millis;
         ss << eth_up_millis;
         log_info("Ethernet PHY link UP: " + ss.str() + " ms");
+        Serial.print("[NetManager.h - INFO] IP address: ");
+        Serial.println(Ethernet.localIP());
     }
 
     return true;
