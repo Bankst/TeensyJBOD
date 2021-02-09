@@ -35,6 +35,8 @@ private:
     void format_response_body(std::string body, std::string regex_pattern, std::string content);
     void send_http_response(EthernetClient *client, int statusCode, std::string response);
 
+    std::string ReplaceAll(std::string str, const std::string& from, const std::string& to);
+
     std::string default_index_response_body = R"HTML(
         <!DOCTYPE HTML>
         <html>
@@ -78,6 +80,16 @@ private:
     void log_error(std::string str) { cout << F("[WebServer.h - ERROR] ") << str.c_str() << endl; }
 };
 
+std::string WebServer::ReplaceAll(std::string str, const std::string& from, const std::string& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+    }
+    return str;
+}
+
+
 void WebServer::init()
 {
     server.begin();
@@ -113,34 +125,36 @@ void WebServer::service_requests()
 
             if (client.available())
             {
-                digitalWrite(LED_BUILTIN, HIGH);
                 while (!request_complete) {
-                    char c = client.read();
-
-
                     int req_len = request_raw_str.length();
-                    if (request_raw_str.at(req_len - 3) == '\r' && 
-                        request_raw_str.at(req_len - 2) == '\n' && 
-                        request_raw_str.at(req_len - 1) == '\r' && 
-                        request_raw_str.at(req_len) == '\n'
+
+                    if (req_len >= 4 &&
+                        request_raw_str.substr(req_len - 4, req_len) == "\r\n\r\n"
                     ) {
                         request_complete = true;
                     } else {
+                        char c = client.read();
                         request_raw_str += c;
                     }
                 }
             }
 
+            // std::string debug_request = ReplaceAll(request_raw_str, "\r", "\\r");
+            // debug_request = ReplaceAll(debug_request, "\n", "\\n\n");
+            // cout << debug_request.c_str();
+
             // parse request
             httpparser::Request request;
             if (parse_http_request(request, request_raw_str))
             {
-                log_debug("HTTP Request:\n" + request.inspect());
+                log_info("Got request for \"" + request.uri + "\"");
 
                 if (request.uri == "/" || request.uri.find("/index.htm") != std::string::npos) {
-
+                    send_http_response(&client, 200, default_index_response_body);
+                    log_info("URI found, sending 200");
                 } else {
-                    send_http_response(&client, 404, not_found_response_body);    
+                    send_http_response(&client, 404, not_found_response_body);
+                    log_info("URI not found, sending 404");
                 }                
             } else {
                 log_warn("bad HTTP request, sending 500");
@@ -148,7 +162,7 @@ void WebServer::service_requests()
             }
 
             // client.flush();
-            delay(1);
+            delay(10);
             client.stop();
             log_debug("response sent - client disconnected");
             digitalWrite(LED_BUILTIN, LOW);
@@ -158,10 +172,13 @@ void WebServer::service_requests()
 
 bool WebServer::parse_http_request(httpparser::Request &request, std::string request_raw_str)
 {
-    cout << "raw HTTP req:\n" << request_raw_str.c_str() << endl;
-
     httpparser::HttpRequestParser parser;
-    httpparser::HttpRequestParser::ParseResult res = parser.parse(request, request_raw_str.c_str(), request_raw_str.c_str() + sizeof(request_raw_str));
+
+    const char * req_raw = request_raw_str.c_str();
+
+    // cout << "raw HTTP req:\n" << req_raw;
+
+    httpparser::HttpRequestParser::ParseResult res = parser.parse(request, req_raw, req_raw + strlen(req_raw));
 
     if (res == httpparser::HttpRequestParser::ParsingCompleted)
     {

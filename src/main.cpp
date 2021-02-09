@@ -12,7 +12,8 @@ IPAddress ip(10, 0, 0, 2);
 IPAddress gateway(10, 0, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
 
-NetManager netManager(ip, gateway, subnet);
+NetManager netManager;
+// NetManager netManager(ip, gateway, subnet);
 SdManager sdManager;
 WebServer webServer;
 
