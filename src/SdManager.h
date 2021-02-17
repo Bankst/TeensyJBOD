@@ -11,7 +11,7 @@ const uint8_t SD_CS_PIN = SS;
 class SdManager
 {
 private:
-    SdFs sd;
+    SdFat sd;
 
     // SD info
     cid_t m_cid;
@@ -71,7 +71,7 @@ bool SdManager::begin()
 
     if (!sd.volumeBegin())
     {
-        cout << F("\n[SdManager.h]: volumeBegin failed. Is the card formatted?\n");
+        log_error("volumeBegin failed. Is the card formatted?");
         error_print();
         return false;
     }
