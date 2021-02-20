@@ -11,7 +11,6 @@
 #include <regex>
 #include <iterator>
 #include <map>
-// #include <unordered_map>
 
 #include "SerialLogger.h"
 #include "StringUtil.h"
@@ -55,34 +54,36 @@ static std::string server_error_response_body = R"HTML(
 )HTML";
 /* #endregion */
 
-using http_callback = std::function<int(httpparser::Request *, std::string *)>;
+using http_callback = int (*)(void *, httpparser::Request *, std::string *);
 using http_request_info = std::pair<std::string, std::string>;
+using http_callback_info = std::pair<void *, http_callback>;
 
 class WebServer
 {
 private:
     EthernetServer server;
 
-    std::map<http_request_info, http_callback> registered_callbacks;
+    std::map<http_request_info, http_callback_info> registered_callbacks;
 
 public:
-    WebServer() : server(EthernetServer(80)){};
+    WebServer() : WebServer(80){};
     WebServer(uint16_t port) : server(EthernetServer(port)){};
     void init();
     void service();
 
-    void register_endpoint(const std::string &method, const std::string &uri, http_callback callback);
+    void register_endpoint(const std::string &method, const std::string &uri, void *context, http_callback callback);
+
 private:
     void service_requests();
 
     bool parse_http_request(httpparser::Request &request, std::string request_raw_str);
     void send_http_response(EthernetClient *client, int statusCode, std::string response, bool is_json = false);
-    int handle_http_request(httpparser::Request * request, std::string * response);
+    int handle_http_request(httpparser::Request *request, std::string *response);
 
-    void log_debug(std::string str) { cout << F("[WebServer.h - DEBUG] ") << str.c_str() << endl; }
-    void log_info(std::string str) { cout << F("[WebServer.h - INFO] ") << str.c_str() << endl; }
-    void log_warn(std::string str) { cout << F("[WebServer.h - WARNING] ") << str.c_str() << endl; }
-    void log_error(std::string str) { cout << F("[WebServer.h - ERROR] ") << str.c_str() << endl; }
+    void log_debug(std::string str) { serialout << F("[WebServer.h - DEBUG] ") << str.c_str() << endl; }
+    void log_info(std::string str) { serialout << F("[WebServer.h - INFO] ") << str.c_str() << endl; }
+    void log_warn(std::string str) { serialout << F("[WebServer.h - WARNING] ") << str.c_str() << endl; }
+    void log_error(std::string str) { serialout << F("[WebServer.h - ERROR] ") << str.c_str() << endl; }
 };
 
 void WebServer::init()
@@ -98,57 +99,73 @@ void WebServer::service()
 
 void WebServer::service_requests()
 {
+
     EthernetClient client = server.available();
-    if (client)
+    if (client.connected())
     {
+#ifdef WEB_DEBUG
         log_debug("client connected");
+        uint32_t client_begin_micros = micros();
+#endif
 
-        if (client.connected())
+        std::string request_raw_str = "";
+
+        int avail = client.available();
+        if (avail)
         {
-            std::string request_raw_str = "";
+            request_raw_str = client.readString(avail).c_str();
+        }
 
-            int avail = client.available();
+#ifdef WEB_DEBUG
+        std::string debug_request = ReplaceAll(request_raw_str, "\r", "\\r");
+        debug_request = ReplaceAll(debug_request, "\n", "\\n\n");
+        cout << "Raw HTTP Request:" << endl;
+        cout << debug_request.c_str();
+#endif
 
-            if (avail)
+        // parse request
+        httpparser::Request request;
+        if (parse_http_request(request, request_raw_str))
+        {
+            log_info("Got " + request.method + " request for \"" + request.uri + "\"");
+
+            if (request.uri == "/" || request.uri.find("/index.htm") != std::string::npos)
             {
-                request_raw_str = client.readString(avail).c_str();
-            }
-
-            std::string debug_request = ReplaceAll(request_raw_str, "\r", "\\r");
-            debug_request = ReplaceAll(debug_request, "\n", "\\n\n");
-            cout << "Raw HTTP Request:" << endl;
-            cout << debug_request.c_str();
-
-            // parse request
-            httpparser::Request request;
-            if (parse_http_request(request, request_raw_str))
-            {
-                log_info("Got request for \"" + request.uri + "\"");
-
-                // TODO: find files
-                if (request.uri == "/" || request.uri.find("/index.htm") != std::string::npos)
-                {
-                    send_http_response(&client, 200, default_index_response_body);
-                    log_info("URI found, sending 200");
-                }
-                else
-                {
-                    send_http_response(&client, 404, not_found_response_body);
-                    log_info("URI not found, sending 404");
-                }
+                log_info("HTTP URI found, sending 200");
+                send_http_response(&client, 200, default_index_response_body);
             }
             else
             {
-                log_warn("bad HTTP request, sending 500");
-                send_http_response(&client, 500, server_error_response_body);
-            }
+                // search for URI in registered_callbacks
+                http_request_info req_info = std::make_pair(request.method, request.uri);
+                bool has_handler = registered_callbacks.count(req_info);
 
-            // client.flush();
-            delay(10);
-            client.stop();
-            log_debug("response sent - client disconnected");
-            digitalWrite(LED_BUILTIN, LOW);
+                if (has_handler)
+                {
+                    std::string response = "";
+                    int resp_code = handle_http_request(&request, &response);
+                    log_info("REST URI found, sending 200");
+                    send_http_response(&client, resp_code, response, true);
+                }
+                else
+                {
+                    log_info("URI not found, sending 404");
+                    send_http_response(&client, 404, not_found_response_body);
+                }
+            }
         }
+        else
+        {
+            log_warn("bad HTTP request, sending 500");
+            send_http_response(&client, 500, server_error_response_body);
+        }
+
+        client.stop();
+#ifdef WEB_DEBUG
+        uint32_t t = micros() - client_begin_micros;
+        log_debug("response sent, client disconnected: " + to_string(t) + " us");
+        threads.delay(1);
+#endif
     }
 }
 
@@ -162,13 +179,10 @@ bool WebServer::parse_http_request(httpparser::Request &request, std::string req
 
     if (res == httpparser::HttpRequestParser::ParsingCompleted)
     {
+#ifdef WEB_DEBUG
         log_debug("parsed HTTP request");
+#endif
         return true;
-    }
-    else if (res == httpparser::HttpRequestParser::ParsingIncompleted)
-    {
-        log_error("http parsing incomplete?!?!");
-        return false;
     }
     else
     {
@@ -188,8 +202,7 @@ void WebServer::send_http_response(EthernetClient *client, int statusCode, std::
     {
         client->println(F("HTTP/1.1 200 OK"));
         client->println(content_type.c_str());
-        client->println(F("Connection: keep-alive"));
-        client->println();
+        client->println(F("Connection: keep-alive\n"));
         client->println(response.c_str());
         break;
     }
@@ -197,8 +210,7 @@ void WebServer::send_http_response(EthernetClient *client, int statusCode, std::
     {
         client->println(F("HTTP/1.1 404 Not Found"));
         client->println(F("Content-Type: text/html"));
-        client->println(F("Connection: keep-alive"));
-        client->println();
+        client->println(F("Connection: keep-alive\n"));
         client->println(response.c_str());
         break;
     }
@@ -206,28 +218,32 @@ void WebServer::send_http_response(EthernetClient *client, int statusCode, std::
     {
         client->println(F("HTTP/1.1 500 Internal Server Error"));
         client->println(F("Content-Type: text/html"));
-        client->println(F("Connection: keep-alive"));
-        client->println();
+        client->println(F("Connection: keep-alive\n"));
         client->println(response.c_str());
         break;
     }
     }
 }
 
-void WebServer::register_endpoint(const std::string &method, const std::string &uri, http_callback callback)
+void WebServer::register_endpoint(const std::string &method, const std::string &uri, void *context, http_callback callback)
 {
     auto req_info = std::make_pair(method, uri);
-    registered_callbacks[req_info] = callback;
+    auto callback_info = std::make_pair(context, callback);
+    registered_callbacks[req_info] = callback_info;
 }
 
-int WebServer::handle_http_request(httpparser::Request * request, std::string * response)
+int WebServer::handle_http_request(httpparser::Request *request, std::string *response)
 {
     auto req_info = std::make_pair(request->method, request->uri);
     auto it = registered_callbacks.find(req_info);
 
-    if (it == registered_callbacks.end()) {
+    if (it == registered_callbacks.end())
+    {
         return 404;
     }
+    
+    auto context = it->second.first;
+    auto callback = it->second.second;
 
-    return it->second(request, response);
+    return callback(context, request, response);
 }

@@ -12,7 +12,6 @@ class SdManager
 {
 private:
     SdFat sd;
-
     // SD info
     cid_t m_cid;
     csd_t m_csd;
@@ -24,9 +23,13 @@ public:
     bool begin();
     void print_info(bool detail);
 
-    SdFs *get_fs();
+    bool get_sd_ok() { return sd_ok; }
+
+    SdFat *get_fs();
 
 private:
+    bool sd_ok;
+
     std::string get_card_type();
     void print_card_type();
 
@@ -39,15 +42,16 @@ private:
 
     void error_print();
 
-    void log_debug(std::string str) { cout << F("[SdManager.h - DEBUG] ") << str.c_str() << endl; }
-    void log_info(std::string str) { cout << F("[SdManager.h - INFO] ") << str.c_str() << endl; }
-    void log_warn(std::string str) { cout << F("[SdManager.h - WARNING] ") << str.c_str() << endl; }
-    void log_error(std::string str) { cout << F("[SdManager.h - ERROR] ") << str.c_str() << endl; }
+    void log_debug(std::string str) { serialout << F("[SdManager.h - DEBUG] ") << str.c_str() << endl; }
+    void log_info(std::string str) { serialout << F("[SdManager.h - INFO] ") << str.c_str() << endl; }
+    void log_warn(std::string str) { serialout << F("[SdManager.h - WARNING] ") << str.c_str() << endl; }
+    void log_error(std::string str) { serialout << F("[SdManager.h - ERROR] ") << str.c_str() << endl; }
 };
 
 bool SdManager::begin()
 {
-    uint32_t t = millis();
+    sd_ok = false;
+    uint32_t init_begin_millis = millis();
     if (!sd.cardBegin(SD_CONFIG))
     {
         log_error("SD init failed!");
@@ -76,19 +80,18 @@ bool SdManager::begin()
         return false;
     }
 
-    t = millis() - t;
-    cout << F("[SdManager.h - INFO] SD init OK: ") << t << " ms" << endl;
-
+    log_info("SD init OK: " + to_string(millis() - init_begin_millis) + " ms");
+    sd_ok = true;
     return true;
 }
 
 void SdManager::print_info(bool detail)
 {
-    cout << F("[SdManager.h]: Card info - ");
+    serialout << F("[SdManager.h]: Card info - ");
 
     if (detail)
     {
-        cout << endl;
+        serialout << endl;
         print_card_type();
         cid_dump();
         if (csd_dump())
@@ -102,12 +105,12 @@ void SdManager::print_info(bool detail)
     else
     {
         double capacity = 0.000512 * sdCardCapacity(&m_csd);
-        cout << capacity << " MB"
-             << " " << get_card_type().c_str() << endl;
+        serialout << capacity << " MB"
+                  << " " << get_card_type().c_str() << endl;
     }
 }
 
-SdFs *SdManager::get_fs()
+SdFat *SdManager::get_fs()
 {
     return &sd;
 }
@@ -129,51 +132,51 @@ std::string SdManager::get_card_type()
 
 void SdManager::print_card_type()
 {
-    cout << F("\tCard type: ");
+    serialout << F("\tCard type: ");
 
     switch (sd.card()->type())
     {
     case SD_CARD_TYPE_SD1:
-        cout << F("SD1\n");
+        serialout << F("SD1\n");
         break;
 
     case SD_CARD_TYPE_SD2:
-        cout << F("SD2\n");
+        serialout << F("SD2\n");
         break;
 
     case SD_CARD_TYPE_SDHC:
         if (sdCardCapacity(&m_csd) < 70000000)
         {
-            cout << F("SDHC\n");
+            serialout << F("SDHC\n");
         }
         else
         {
-            cout << F("SDXC\n");
+            serialout << F("SDXC\n");
         }
         break;
 
     default:
-        cout << F("Unknown\n");
+        serialout << F("Unknown\n");
     }
 }
 
 void SdManager::cid_dump()
 {
-    cout << '\t' << F("Manufacturer ID: ");
-    cout << uppercase << showbase << hex << int(m_cid.mid) << dec << endl;
-    cout << '\t' << F("OEM ID: ") << m_cid.oid[0] << m_cid.oid[1] << endl;
-    cout << '\t' << F("Product: ");
+    serialout << '\t' << F("Manufacturer ID: ");
+    serialout << uppercase << showbase << hex << int(m_cid.mid) << dec << endl;
+    serialout << '\t' << F("OEM ID: ") << m_cid.oid[0] << m_cid.oid[1] << endl;
+    serialout << '\t' << F("Product: ");
     for (uint8_t i = 0; i < 5; i++)
     {
-        cout << m_cid.pnm[i];
+        serialout << m_cid.pnm[i];
     }
-    cout << endl;
-    cout << '\t' << F("Version: ");
-    cout << int(m_cid.prv_n) << '.' << int(m_cid.prv_m) << endl;
-    cout << '\t' << F("Serial number: ") << hex << m_cid.psn << dec << endl;
-    cout << '\t' << F("Manufacturing date: ");
-    cout << int(m_cid.mdt_month) << '/';
-    cout << (2000 + m_cid.mdt_year_low + 10 * m_cid.mdt_year_high) << endl;
+    serialout << endl;
+    serialout << '\t' << F("Version: ");
+    serialout << int(m_cid.prv_n) << '.' << int(m_cid.prv_m) << endl;
+    serialout << '\t' << F("Serial number: ") << hex << m_cid.psn << dec << endl;
+    serialout << '\t' << F("Manufacturing date: ");
+    serialout << int(m_cid.mdt_month) << '/';
+    serialout << (2000 + m_cid.mdt_year_low + 10 * m_cid.mdt_year_high) << endl;
 }
 
 bool SdManager::csd_dump()
@@ -191,22 +194,22 @@ bool SdManager::csd_dump()
     }
     else
     {
-        cout << F("m_csd version error\n");
+        serialout << F("m_csd version error\n");
         return false;
     }
     m_eraseSize++;
-    cout << '\t' << F("Capacity: ") << 0.000512 * sdCardCapacity(&m_csd);
-    cout << F(" MB (MB = 1,000,000 bytes)\n");
+    serialout << '\t' << F("Capacity: ") << 0.000512 * sdCardCapacity(&m_csd);
+    serialout << F(" MB (MB = 1,000,000 bytes)\n");
 
-    cout << '\t' << F("flashEraseSize: ") << int(m_eraseSize) << F(" blocks\n");
-    cout << '\t' << F("eraseSingleBlock: ");
+    serialout << '\t' << F("flashEraseSize: ") << int(m_eraseSize) << F(" blocks\n");
+    serialout << '\t' << F("eraseSingleBlock: ");
     if (eraseSingleBlock)
     {
-        cout << F("true\n");
+        serialout << F("true\n");
     }
     else
     {
-        cout << F("false\n");
+        serialout << F("false\n");
     }
     return true;
 }
@@ -217,12 +220,12 @@ bool SdManager::mbr_dump()
     bool valid = true;
     if (!sd.card()->readSector(0, (uint8_t *)&mbr))
     {
-        cout << F("\nread MBR failed.\n");
+        serialout << F("\nread MBR failed.\n");
         error_print();
         return false;
     }
-    cout << F("\n\tSD Partition Table\n");
-    cout << F("\tpart,boot,bgnCHS[3],type,endCHS[3],start,length\n");
+    serialout << F("\n\tSD Partition Table\n");
+    serialout << F("\tpart,boot,bgnCHS[3],type,endCHS[3],start,length\n");
     for (uint8_t ip = 1; ip < 5; ip++)
     {
         MbrPart_t *pt = &mbr.part[ip - 1];
@@ -231,23 +234,23 @@ bool SdManager::mbr_dump()
         {
             valid = false;
         }
-        cout << '\t' << int(ip) << ',' << uppercase << showbase << hex;
-        cout << int(pt->boot) << ',';
+        serialout << '\t' << int(ip) << ',' << uppercase << showbase << hex;
+        serialout << int(pt->boot) << ',';
         for (int i = 0; i < 3; i++)
         {
-            cout << int(pt->beginCHS[i]) << ',';
+            serialout << int(pt->beginCHS[i]) << ',';
         }
-        cout << int(pt->type) << ',';
+        serialout << int(pt->type) << ',';
         for (int i = 0; i < 3; i++)
         {
-            cout << int(pt->endCHS[i]) << ',';
+            serialout << int(pt->endCHS[i]) << ',';
         }
-        cout << dec << getLe32(pt->relativeSectors) << ',';
-        cout << getLe32(pt->totalSectors) << endl;
+        serialout << dec << getLe32(pt->relativeSectors) << ',';
+        serialout << getLe32(pt->totalSectors) << endl;
     }
     if (!valid)
     {
-        cout << '\t' << F("\nMBR not valid, assuming Super Floppy format.\n");
+        serialout << '\t' << F("\nMBR not valid, assuming Super Floppy format.\n");
     }
     return true;
 }
@@ -260,25 +263,25 @@ bool SdManager::mbr_check()
 
 bool SdManager::vol_dump()
 {
-    cout << '\t' << F("Scanning FAT, please wait.\n");
+    serialout << '\t' << F("Scanning FAT, please wait.\n");
     uint32_t freeClusterCount = sd.freeClusterCount();
     if (sd.fatType() <= 32)
     {
-        cout << '\t' << F("Volume is FAT") << int(sd.fatType()) << endl;
+        serialout << '\t' << F("Volume is FAT") << int(sd.fatType()) << endl;
     }
     else
     {
-        cout << '\t' << F("Volume is exFAT\n");
+        serialout << '\t' << F("Volume is exFAT\n");
     }
-    cout << '\t' << F("sectorsPerCluster: ") << sd.sectorsPerCluster() << endl;
-    cout << '\t' << F("clusterCount:      ") << sd.clusterCount() << endl;
-    cout << '\t' << F("freeClusterCount:  ") << freeClusterCount << endl;
-    cout << '\t' << F("fatStartSector:    ") << sd.fatStartSector() << endl;
-    cout << '\t' << F("dataStartSector:   ") << sd.dataStartSector() << endl;
+    serialout << '\t' << F("sectorsPerCluster: ") << sd.sectorsPerCluster() << endl;
+    serialout << '\t' << F("clusterCount:      ") << sd.clusterCount() << endl;
+    serialout << '\t' << F("freeClusterCount:  ") << freeClusterCount << endl;
+    serialout << '\t' << F("fatStartSector:    ") << sd.fatStartSector() << endl;
+    serialout << '\t' << F("dataStartSector:   ") << sd.dataStartSector() << endl;
     if (sd.dataStartSector() % m_eraseSize)
     {
-        cout << F("Data area is not aligned on flash erase boundary!\n");
-        cout << F("Download and use formatter from www.sdcard.org!\n");
+        serialout << F("Data area is not aligned on flash erase boundary!\n");
+        serialout << F("Download and use formatter from www.sdcard.org!\n");
     }
     return true;
 }
@@ -287,9 +290,9 @@ void SdManager::error_print()
 {
     if (sd.sdErrorCode())
     {
-        cout << F("SD errorCode: ") << hex << showbase;
+        serialout << F("SD errorCode: ") << hex << showbase;
         printSdErrorSymbol(&Serial, sd.sdErrorCode());
-        cout << F(" = ") << int(sd.sdErrorCode()) << endl;
-        cout << F("SD errorData = ") << int(sd.sdErrorData()) << endl;
+        serialout << F(" = ") << int(sd.sdErrorCode()) << endl;
+        serialout << F("SD errorData = ") << int(sd.sdErrorData()) << endl;
     }
 }

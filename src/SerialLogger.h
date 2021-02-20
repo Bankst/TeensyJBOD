@@ -1,7 +1,8 @@
 #pragma once
 
-#include <string>
-#include "stdio.h"
-#include "sdios.h"
+#include <ArduinoStream.h>
 
-ArduinoOutStream cout(Serial);
+ArduinoOutStream serialout(Serial);
+
+ThreadWrap(serialout, serialoutX);
+#define serialout ThreadClone(serialoutX)
