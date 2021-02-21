@@ -36,7 +36,7 @@ static inline std::string ReplaceAll(std::string str, const std::string &from, c
     return str;
 }
 
-static inline std::string to_string(bool value) {
+static inline std::string bool_to_string(bool value) {
     return value ? "true" : "false";
 }
 

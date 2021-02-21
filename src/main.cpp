@@ -3,6 +3,9 @@
 #include <NativeEthernet.h>
 #include <TeensyID.h>
 
+#include <set>
+#include <iostream>
+
 ThreadWrap(Serial, SerialX);
 #define Serial ThreadClone(SerialX)
 
@@ -10,6 +13,7 @@ ThreadWrap(Serial, SerialX);
 #include "NetManager.h"
 #include "WebServer.h"
 #include "SdManager.h"
+#include "I2CManager.h"
 #include "RestApi.h"
 #include "TaskManager.h"
 
@@ -21,8 +25,9 @@ IPAddress subnet(255, 255, 0, 0);
 NetManager net_manager{ip, gateway, subnet};
 SdManager sd_manager;
 WebServer web_server;
-TaskManager task_manager;
+I2CManager i2c_manager;
 RestApi restApi{&web_server, &sd_manager};
+TaskManager task_manager;
 
 void log_debug(std::string str) { serialout << F("[main.cpp - DEBUG] ") << str.c_str() << endl; }
 void log_info(std::string str) { serialout << F("[main.cpp - INFO] ") << str.c_str() << endl; }
@@ -53,7 +58,7 @@ void status_led_loop()
 
 void task_loop()
 {
-  while(1)
+  while (1)
   {
     task_manager.service();
   }
@@ -80,7 +85,7 @@ void setup()
     delay(50);
   }
 
-  log_info("TeensyJBOD v0.2.5 starting");
+  log_info("TeensyJBOD v0.2.7 starting");
 
   if (net_manager.begin())
   {
@@ -99,7 +104,12 @@ void setup()
     status_led_blinks = 3;
   }
 
-  // fan control. lol todo
+  task_manager.add_task(TaskManager::TimedTask{[](){i2c_manager.fan_speed_scan_task();}, 10000});
+  // task_manager.add_task(TaskManager::TimedTask{[](){i2c_manager.i2c_scan_task();}, 5000});
+
+  threads.addThread(task_loop, 0, 2560, 0);
+
+  i2c_manager.begin_fan_control();
 
   // always do this last
   threads.addThread(status_led_loop, 0, 128, 0);

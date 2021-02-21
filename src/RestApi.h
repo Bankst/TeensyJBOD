@@ -43,7 +43,7 @@ int RestApi::handle_get_hwinfo(httpparser::Request *request, std::string *respon
     response->append(
         "{"
         "\"cpu_temp\": \"" + to_string(get_cpu_temp()) + " °C\","
-        "\"sd_status\": \"" + to_string(sdManager->get_sd_ok()) + "\""
+        "\"sd_status\": \"" + bool_to_string(sdManager->get_sd_ok()) + "\""
         "}"
     );
     

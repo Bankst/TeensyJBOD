@@ -5,18 +5,22 @@
 #include <functional>
 #include <vector>
 
+typedef void (*callback_function)(void);
+
+
 class TaskManager
 {
 public:
+
     class TimedTask
     {
     private:
-        const uint32_t task_period_ms;
         const std::function<void()> task_function;
-        uint32_t last_execute_ms = 0;
+        const uint32_t task_period_ms;
+        int32_t last_execute_ms = 0 - millis(); // enable instant execution upon scheduling
 
     public:
-        TimedTask(uint32_t task_period_ms, std::function<void()> task_function) : task_period_ms(task_period_ms), task_function(task_function){};
+        TimedTask(std::function<void()> task_function, uint32_t task_period_ms) : task_function(task_function), task_period_ms(task_period_ms){};
 
         void execute()
         {
