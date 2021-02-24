@@ -35,7 +35,7 @@ void log_warn(std::string str) { serialout << F("[main.cpp - WARNING] ") << str.
 void log_error(std::string str) { serialout << F("[main.cpp - ERROR] ") << str.c_str() << endl; }
 
 const int status_led_full_period = 1000;
-const int status_led_on_period = 100;
+const int status_led_on_period = 80;
 const int status_led_off_period = status_led_on_period / 2;
 
 int status_led_blinks = 2; // 1 indicates normal operation, 2 indicates error
@@ -89,10 +89,6 @@ void setup()
 
   if (net_manager.begin())
   {
-    // if (sdManager.begin())
-    // {
-    //   sdManager.print_info(false);
-    // }
 
     // start the server
     web_server.init();

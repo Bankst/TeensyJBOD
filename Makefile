@@ -11,7 +11,7 @@ USB_MODE			:= SERIAL
 ARD_LIBS_BASE		:= arduino_lib
 LIBS_BASE			:= lib
 
-ARD_LIBS		    := SPI NativeEthernet FNET TeensyThreads Wire TeensyID SdFat
+ARD_LIBS		    := SPI NativeEthernet FNET TeensyThreads teensy4_i2c TeensyID SdFat
 
 CORE_BASE			:= ./teensy4
 GCC_BASE      		:= C:\PROGRA~2\Arduino\hardware\tools\arm\bin
@@ -21,7 +21,7 @@ UPL_PJRC_B    		:= C:\PROGRA~2\Arduino\hardware\tools
 # Flags and Defines
 #******************************************************************************
 FLAGS_CPU   := -mthumb -mcpu=cortex-m7 -mfloat-abi=hard -mfpu=fpv5-d16
-FLAGS_OPT   := -O
+FLAGS_OPT   := -O3
 FLAGS_COM   := -g -Wall -ffunction-sections -fdata-sections -nostdlib -MMD
 FLAGS_LSP   := 
 
