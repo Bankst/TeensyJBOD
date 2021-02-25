@@ -1,5 +1,3 @@
-#pragma once
-
 #include "Max6651Config.h"
 
 namespace
@@ -16,6 +14,7 @@ Max6651Config::Max6651Config() : mode_config_(MODE_FULL_ON | DEFAULT_FAN_VOLTAGE
                                  alarm_config_(DEFAULT_ALARM_ENABLE),
                                  gpio_config_(DEFAULT_GPIO_DEFINITION),
                                  tachometer_count_time_(DEFAULT_TACHOMETER_COUNT_TIME),
+                                 pulses_per_revolution_(DEFAULT_PULSES_PER_REVOLUTION),
                                  f_clk_(DEFAULT_CLOCK_FREQUENCY)
 {
 }

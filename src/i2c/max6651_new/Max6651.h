@@ -17,8 +17,9 @@ public:
 
     int begin(bool gpio = false, bool alarm = false);
 
-    int speed(int rpm);
+    int setSpeed(int rpm);
     int actualSpeed(uint8_t index) const;
+    uint8_t rawSpeed(uint8_t index) const;
 
     void minimumSpeed(int minimumRPM);
     int minimumSpeed() const;

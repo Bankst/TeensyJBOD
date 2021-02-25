@@ -85,7 +85,7 @@ void setup()
     delay(50);
   }
 
-  log_info("TeensyJBOD v0.2.7 starting");
+  log_info("TeensyJBOD v0.3.0 starting");
 
   if (net_manager.begin())
   {
@@ -100,7 +100,7 @@ void setup()
     status_led_blinks = 3;
   }
 
-  task_manager.add_task(TaskManager::TimedTask{[](){i2c_manager.fan_speed_scan_task();}, 10000});
+  task_manager.add_task(TaskManager::TimedTask{[](){i2c_manager.fan_speed_scan_task();}, 5000});
   // task_manager.add_task(TaskManager::TimedTask{[](){i2c_manager.i2c_scan_task();}, 5000});
 
   threads.addThread(task_loop, 0, 2560, 0);

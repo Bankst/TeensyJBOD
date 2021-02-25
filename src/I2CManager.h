@@ -53,23 +53,21 @@ private:
 void I2CManager::begin_fan_control()
 {
   backplane_fan_controller.begin();
-  backplane_fan_controller.mode(ConfigMode::MODE_OPEN_LOOP);
-  backplane_fan_controller.speed(4250);
+  backplane_fan_controller.mode(ConfigMode::MODE_CLOSED_LOOP);
+  int set_speed = backplane_fan_controller.setSpeed(4000);
+  log_info("Fan control begin!");
+  log_info("Set speed to " + to_string(set_speed) + "RPM");
 }
 
 void I2CManager::fan_speed_scan_task()
 {
-  Serial.print("Fan speeds: ");
+  std::string fan_str = "Fan speeds: ";
   for (int i = 0; i < 4; i++)
   {
-    int speed = backplane_fan_controller.actualSpeed(i);
-    if (speed > 4500 || speed < 4000) {
-      backplane_fan_controller.speed(4250);
-    }
-    Serial.print(speed);
-    if (i != 3) Serial.print(", ");
+    fan_str += to_string(backplane_fan_controller.actualSpeed(i));
+    if (i != 3) fan_str += ", ";
   }
-  Serial.println();
+  log_info(fan_str);
 }
 
 void I2CManager::i2c_scan_task()

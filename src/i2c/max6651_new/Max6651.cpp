@@ -10,6 +10,8 @@ Max6651::Max6651(TeensyI2CMaster *i2c, uint8_t address, Max6651Config config) : 
     tachometer_count_time = config.tachometer_count_time_;
     f_clk = config.f_clk_;
     pulses_per_rev = config.pulses_per_revolution_;
+    k_tach_max_speed = K_TACH_LOWER_LIMIT;
+    k_tach_min_speed = K_TACH_UPPER_LIMIT;
 }
 
 int Max6651::begin(bool gpio, bool alarm)
@@ -23,11 +25,10 @@ int Max6651::begin(bool gpio, bool alarm)
     if (alarm)
         write(COMMAND_ALARM_ENABLE, alarm_config);
     write(COMMAND_TACH_COUNT_TIME, tachometer_count_time);
-    speed(0); // TODO: remove?
     return error;
 }
 
-int Max6651::speed(int rpm)
+int Max6651::setSpeed(int rpm)
 {
     if (rpm < 0)
     {
@@ -46,10 +47,13 @@ int Max6651::speed(int rpm)
         }
     }
 
-    auto minSpeed = minimumSpeed();
-    auto maxSpeed = maximumSpeed();
-    if (rpm < minSpeed) rpm = minSpeed;
-    if (rpm > maxSpeed) rpm = maxSpeed;
+    // auto minSpeed = minimumSpeed();
+    // auto maxSpeed = maximumSpeed();
+    // TODO: fix min/maximumSpeed methods!!!
+    // int minSpeed = 1000;
+    // int maxSpeed = 8000;
+    // if (rpm < minSpeed) rpm = minSpeed;
+    // if (rpm > maxSpeed) rpm = maxSpeed;
 
     uint8_t k_tach = rpm_to_kTach(rpm);
     int result = set_tach_speed(k_tach);
@@ -66,6 +70,11 @@ int Max6651::actualSpeed(uint8_t index) const
     float rps = pulse_per_sec / pulses_per_rev;
     float rpm = rps * SECONDS_PER_MINUTE;
     return int(rpm);
+}
+
+uint8_t Max6651::rawSpeed(uint8_t index) const
+{
+    return read_tachometer(index);
 }
 
 void Max6651::minimumSpeed(int minimumRPM)
