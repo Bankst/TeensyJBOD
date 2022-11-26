@@ -17,7 +17,7 @@ private:
     IPAddress subnet;
 
 public:
-    NetManager() : NetManager(IPAddress(), IPAddress(), IPAddress()) {};
+    NetManager() : NetManager(IPAddress(), IPAddress(), IPAddress()){};
 
     NetManager(IPAddress ip, IPAddress gateway, IPAddress subnet) : ip(ip), gateway(gateway), subnet(subnet)
     {
@@ -28,10 +28,15 @@ public:
     bool begin();
 
 private:
-    void log_debug(std::string str) { serialout << F("[NetManager.h - DEBUG] ") << str.c_str() << endl; }
-    void log_info(std::string str) { serialout << F("[NetManager.h - INFO] ") << str.c_str() << endl; }
-    void log_warn(std::string str) { serialout << F("[NetManager.h - WARNING] ") << str.c_str() << endl; }
-    void log_error(std::string str) { serialout << F("[NetManager.h - ERROR] ") << str.c_str() << endl; }
+    void log_debug(std::string str){};
+    void log_info(std::string str){};
+    void log_warn(std::string str){};
+    void log_error(std::string str){};
+
+    // void log_debug(std::string str) { serialout << F("[NetManager.h - DEBUG] ") << str.c_str() << endl; }
+    // void log_info(std::string str) { serialout << F("[NetManager.h - INFO] ") << str.c_str() << endl; }
+    // void log_warn(std::string str) { serialout << F("[NetManager.h - WARNING] ") << str.c_str() << endl; }
+    // void log_error(std::string str) { serialout << F("[NetManager.h - ERROR] ") << str.c_str() << endl; }
 };
 
 bool NetManager::begin()
@@ -41,28 +46,28 @@ bool NetManager::begin()
     std::string mode_str = (is_static ? "Static" : "DHCP");
     log_info("Bringing up ethernet - " + mode_str);
 
-
     uint32_t eth_up_start_millis = millis();
 
-    if (is_static) {
+    if (is_static)
+    {
         Ethernet.begin(mac, ip, gateway, gateway, subnet);
-    } else if (!Ethernet.begin(mac, 10000, 5000)) {
+    }
+    else if (!Ethernet.begin(mac, 10000, 5000))
+    {
         // TODO: default to a known static IP upon dhcp failure? retry forever??
         return false;
     }
 
-    
     if (Ethernet.linkStatus() == LinkOFF)
     {
         log_info("Ethernet PHY link DOWN");
     }
     else if (Ethernet.linkStatus() == LinkON)
     {
-        log_info("Ethernet PHY link UP: " + to_string(millis() - eth_up_start_millis) + " ms");
+        log_info("Ethernet PHY link UP: " + StringUtil::to_string(millis() - eth_up_start_millis) + " ms");
         Serial.print("[NetManager.h - INFO] IP address: ");
         Serial.println(Ethernet.localIP());
     }
 
     return true;
 }
-

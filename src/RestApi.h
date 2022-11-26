@@ -1,7 +1,6 @@
 #pragma once
 
 #include "WebServer.h"
-#include "SdManager.h"
 
 #include <string>
 
@@ -9,10 +8,9 @@ class RestApi
 {
 private:
     WebServer *webServer;
-    SdManager *sdManager;
 
 public:
-    RestApi(WebServer *webServer, SdManager *sdManager) : webServer(webServer), sdManager(sdManager)
+    RestApi(WebServer *webServer) : webServer(webServer)
     {
         webServer->register_endpoint("GET", "/api/version", this, handle_get_version_cb);
         webServer->register_endpoint("GET", "/api/hardware", this, handle_get_hwinfo_cb);
@@ -42,8 +40,7 @@ int RestApi::handle_get_hwinfo(httpparser::Request *request, std::string *respon
 {
     response->append(
         "{"
-        "\"cpu_temp\": \"" + to_string(get_cpu_temp()) + " °C\","
-        "\"sd_status\": \"" + bool_to_string(sdManager->get_sd_ok()) + "\""
+        "\"cpu_temp\": \"" + StringUtil::to_string(get_cpu_temp()) + " °C\","
         "}"
     );
     

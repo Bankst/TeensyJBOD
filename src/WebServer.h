@@ -80,10 +80,15 @@ private:
     void send_http_response(EthernetClient *client, int statusCode, std::string response, bool is_json = false);
     int handle_http_request(httpparser::Request *request, std::string *response);
 
-    void log_debug(std::string str) { serialout << F("[WebServer.h - DEBUG] ") << str.c_str() << endl; }
-    void log_info(std::string str) { serialout << F("[WebServer.h - INFO] ") << str.c_str() << endl; }
-    void log_warn(std::string str) { serialout << F("[WebServer.h - WARNING] ") << str.c_str() << endl; }
-    void log_error(std::string str) { serialout << F("[WebServer.h - ERROR] ") << str.c_str() << endl; }
+    void log_debug(std::string str){};
+    void log_info(std::string str){};
+    void log_warn(std::string str){};
+    void log_error(std::string str){};
+
+    // void log_debug(std::string str) { serialout << F("[WebServer.h - DEBUG] ") << str.c_str() << endl; }
+    // void log_info(std::string str) { serialout << F("[WebServer.h - INFO] ") << str.c_str() << endl; }
+    // void log_warn(std::string str) { serialout << F("[WebServer.h - WARNING] ") << str.c_str() << endl; }
+    // void log_error(std::string str) { serialout << F("[WebServer.h - ERROR] ") << str.c_str() << endl; }
 };
 
 void WebServer::init()
@@ -241,7 +246,7 @@ int WebServer::handle_http_request(httpparser::Request *request, std::string *re
     {
         return 404;
     }
-    
+
     auto context = it->second.first;
     auto callback = it->second.second;
 
